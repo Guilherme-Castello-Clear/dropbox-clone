@@ -4,7 +4,7 @@ class DropBoxController{
     
     constructor(){
         
-
+        this.onselectionchange = new Event('selectionchange');
 
         this.btnSendFileEl = document.querySelector("#btn-send-file");
         this.inputFilesEl = document.querySelector("#files");
@@ -13,12 +13,41 @@ class DropBoxController{
         this.namefileEl = this.snackModalEl.querySelector('.filename');
         this.timeleftEl = this.snackModalEl.querySelector('.timeleft');
         this.listFilesEl = document.querySelector('#list-of-files-and-directories');
+        this.btnNewFolder = document.querySelector('#btn-new-folder');
+        this.btnRename = document.querySelector('#btn-rename');
+        this.btnDelete = document.querySelector('#btn-delete');
+        
+        
         this.connectFirebase();
         this.initEvents();
         this.readFiles();
     }
 
+    getSelection(){
+
+        return this.listFilesEl.querySelectorAll('.selected');
+
+    }
+
     initEvents(){
+
+        this.listFilesEl.addEventListener('selectionchange', e=>{
+            console.log(console.log(this.getSelection().length));
+            switch(this.getSelection().length){
+                case 0:
+                    this.btnRename.style.display = 'none';
+                    this.btnDelete.style.display = 'none';
+                break;
+                case 1:
+                    this.btnRename.style.display = 'block';
+                    this.btnDelete.style.display = 'block';
+                break;
+                default:
+                    this.btnRename.style.display = 'none';
+                    this.btnDelete.style.display = 'block';
+            }
+        })
+
 
         this.btnSendFileEl.addEventListener('click', event =>{
             this.inputFilesEl.click();
@@ -346,6 +375,8 @@ class DropBoxController{
             <div class="name text-center">${file.originalFilename}</div>
         `;
 
+        this.initEventsLi(li);
+
         return li;
     }
 
@@ -366,5 +397,52 @@ class DropBoxController{
 
     }
 
+    initEventsLi(li){
+
+        li.addEventListener('click', e => {
+
+            this.listFilesEl.dispatchEvent(this.onselectionchange);
+
+
+            if(e.shiftKey){
+                let firstLi = this.listFilesEl.querySelector('li.selected');
+                if(firstLi){
+
+                    let indexStart;
+                    let indexEnd;
+                    let lis = li.parentElement.childNodes;
+                    lis.forEach((el, index)=>{
+                        if (firstLi === el) indexStart = index;
+                        if (li === el) indexEnd = index;
+
+                    });
+
+                    let index = [indexStart, indexEnd].sort();
+                    lis.forEach((el, i) =>{
+
+                        if(i >= index[0] && i <= index[1]){
+                            el.classList.add('selected');
+
+                        }
+
+                    });
+                    return true;
+                }
+
+            }
+
+            if (!e.ctrlKey){
+                    this.listFilesEl.querySelectorAll("li.selected").forEach(el=>{
+
+
+                        el.classList.remove('selected');
+
+                    });
+
+            }
+            li.classList.toggle('selected');
+            this.listFilesEl.dispatchEvent(this.onselectionchange);
+        });
+    }
 
 }
