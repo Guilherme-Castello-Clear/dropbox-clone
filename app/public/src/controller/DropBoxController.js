@@ -22,15 +22,33 @@ class DropBoxController{
         this.initEvents();
         this.readFiles();
     }
+    
+    removeTask() {
+        let promises = [];
 
-    getSelection(){
+        this.getSelection().forEach((li) => {
+        let file = JSON.parse(li.dataset.file);
+        let key = li.dataset.key;
+        console.log(file, key)
+        let formData = new FormData()
 
-        return this.listFilesEl.querySelectorAll('.selected');
+        formData.append('path', file.filepath);
+        formData.append('key', key);
 
+        promises.push(this.ajax('DELETE', '/file', formData));
+
+        if (key) {
+            this.getFirebaseRef().child(key).remove();
+        }
+
+        });
     }
 
     initEvents(){
 
+        this.btnDelete.addEventListener("click", (e) => {
+            this.removeTask()
+        });
 
         this.btnRename.addEventListener('click', e=>{
             let li = this.getSelection()[0];
@@ -45,7 +63,6 @@ class DropBoxController{
         })
 
         this.listFilesEl.addEventListener('selectionchange', e=>{
-            console.log(console.log(this.getSelection().length));
             switch(this.getSelection().length){
                 case 0:
                     this.btnRename.style.display = 'none';
@@ -73,7 +90,6 @@ class DropBoxController{
             this.uploadTask(event.target.files).then(responses =>{
 
                 responses.forEach(resp => {
-                    console.log(resp.files['input-file']);
                     this.getFirebaseRef().push().set(resp.files['input-file']);
 
 
@@ -85,6 +101,12 @@ class DropBoxController{
                 console.log(err);
             });
         })
+
+    }
+
+    getSelection(){
+
+        return this.listFilesEl.querySelectorAll('.selected');
 
     }
 
@@ -117,42 +139,52 @@ class DropBoxController{
         this.snackModalEl.style.display = (show) ? 'block' : 'none';
     }
 
+    ajax(url, method = 'GET', formData= new FormData(), onprogress = function(){}, onloadstart = function(){}){
+
+        return new Promise((resolve, reject) =>{
+
+            let ajax = new XMLHttpRequest();
+            ajax.open(url, method)
+            ajax.onload = event=>{
+                this.modalShow(false);
+                try{
+                    resolve(JSON.parse(ajax.responseText));
+                } catch(e){
+                    reject(e);
+                }
+
+            }
+
+            ajax.onerror = event=>{
+                this.modalShow(false);
+
+                reject(event);
+            };
+
+            ajax.upload.onprogress = onprogress;
+            onloadstart();
+            ajax.send(formData);
+
+        })
+        
+    }
+
     uploadTask(files){
         let promises = [];
 
         [...files].forEach(file=>{
 
-            promises.push(new Promise((resolve, reject)=>{
+            var formData = new FormData();
+            formData.append('input-file', file);
 
-                let ajax = new XMLHttpRequest();
-                ajax.open('POST', '/upload')
-                ajax.onload = event=>{
-                    this.modalShow(false);
-                    try{
-                        resolve(JSON.parse(ajax.responseText));
-                    } catch(e){
-                        reject(e);
-                    }
 
-                }
+            promises.push(this.ajax('POST', '/upload', formData, ()=>{
+                this.uploadProgress(event, file);
 
-                ajax.onerror = event=>{
-                    this.modalShow(false);
 
-                    reject(event);
-                };
+            }, ()=> {
 
-                ajax.upload.onprogress = event => {
-
-                    this.uploadProgress(event, file);
-
-                }
-
-                let formData = new FormData();
-
-                formData.append('input-file', file);
                 this.startUploadTime = Date.now();
-                ajax.send(formData);
 
             }));
         });
@@ -182,7 +214,6 @@ class DropBoxController{
         this.timeleftEl.innerHTML = this.formatTimeToHuman(timeleft);
 
         if(porcent == 100){
-        console.log(timespent, porcent);
 
             this.modalShow(false);
         }
@@ -205,7 +236,6 @@ class DropBoxController{
         if (seconds > 0){
             return `${seconds} segundos`;
         }
-        console.log(duration ,hours, minutes, seconds);
         return '';
 
     }
@@ -404,7 +434,6 @@ class DropBoxController{
                 let key = snapshotItem.key
                 let data = snapshotItem.val();
 
-                console.log(key, data);
                 this.listFilesEl.appendChild(this.getFileView(data, key));
             })
         });
