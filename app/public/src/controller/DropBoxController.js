@@ -6,6 +6,8 @@ class DropBoxController{
         
         this.onselectionchange = new Event('selectionchange');
 
+
+        this.currentFolder = ['dropbox'];
         this.btnSendFileEl = document.querySelector("#btn-send-file");
         this.inputFilesEl = document.querySelector("#files");
         this.snackModalEl = document.querySelector("#react-snackbar-root");
@@ -45,6 +47,18 @@ class DropBoxController{
     }
 
     initEvents(){
+
+
+        this.btnNewFolder.addEventListener("click", e=>{
+            let name = prompt("Nome da nova pasta: ");
+            if(name){
+                this.getFirebaseRef().push().set({
+                    name,
+                    mimetype:'folder',
+                    filepath:this.currentFolder.join('/')
+                });
+            }
+        })
 
         this.btnDelete.addEventListener("click", (e) => {
             this.removeTask()
@@ -242,7 +256,7 @@ class DropBoxController{
 
     getFileIconView(file){
 
-        switch(file.mimetype){
+        switch(file.mimetype || file.type){
             case 'folder':
                 return `
                     <svg width="160" height="160" viewBox="0 0 160 160" class="mc-icon-template-content tile__preview tile__preview--icon">
@@ -414,11 +428,20 @@ class DropBoxController{
         let li = document.createElement('li');
         li.dataset.key = key;
         li.dataset.file = JSON.stringify(file);
-        li.innerHTML =  `
-            ${this.getFileIconView(file)}
-            <div class="name text-center">${file.originalFilename}</div>
-        `;
 
+        if(file.originalFilename){
+            li.innerHTML =  `
+                ${this.getFileIconView(file)}
+                <div class="name text-center">${file.originalFilename}</div>
+            `;
+        }
+        else if(file.name){
+            li.innerHTML =  `
+                ${this.getFileIconView(file)}
+                <div class="name text-center">${file.name}</div>
+            `;
+        }
+        
         this.initEventsLi(li);
 
         return li;
