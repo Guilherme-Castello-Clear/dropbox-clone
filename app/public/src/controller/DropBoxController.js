@@ -31,7 +31,6 @@ class DropBoxController{
         this.getSelection().forEach((li) => {
         let file = JSON.parse(li.dataset.file);
         let key = li.dataset.key;
-        console.log(file, key)
         let formData = new FormData()
 
         formData.append('path', file.filepath);
@@ -480,7 +479,6 @@ class DropBoxController{
             let folderName = this.currentFolder[i];
             let span = document.createElement('span');
             path.push(folderName);
-            console.log(path);
 
             if((i + 1) === this.currentFolder.length){
                 span.innerHTML = folderName;
@@ -500,7 +498,6 @@ class DropBoxController{
                         </span>
                 
                 `
-                console.log(folderName);
                 nav.appendChild(span)
             }
         }
@@ -543,7 +540,7 @@ class DropBoxController{
                 break;
 
                 default:
-                    window.open('/file?path='+file.path);
+                    window.open('/file?path='+file.filepath);
                     break;
             }
 
